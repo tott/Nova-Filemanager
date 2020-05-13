@@ -212,7 +212,6 @@ class FileManagerService
         $fullPath = $this->storage->path($file);
         try {
             $info = new NormalizeFile($this->storage, $fullPath, $file);
-
             return response()->json($info->toArray());
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 404);

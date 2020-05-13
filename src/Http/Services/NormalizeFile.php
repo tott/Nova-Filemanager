@@ -35,7 +35,12 @@ class NormalizeFile
     public function __construct(FilesystemAdapter $storage, string $path, string $storagePath)
     {
         $this->storage = $storage;
-        $this->file = new SplFileInfo($path);
+
+        $contents = collect($this->storage->listContents(dirname($path), false));
+        $this->file = $contents
+            ->where('basename', '=', basename($path))
+            ->first(); // there can be duplicate file names!
+
 
         $this->storagePath = $storagePath;
     }
@@ -46,13 +51,13 @@ class NormalizeFile
     public function toArray()
     {
         $data = collect([
-            'name' => $this->file->getFilename(),
+            'name' => $this->file['name'],
             'mime' => $this->getCorrectMimeFileType(),
             'path' => $this->storagePath,
             'size' => $this->getFileSize(),
             'url'  => $this->cleanSlashes($this->storage->url($this->storagePath)),
             'date' => $this->modificationDate(),
-            'ext'  => $this->file->getExtension(),
+            'ext'  => $this->file['extension'],
         ]);
 
         $data = $this->setExtras($data);
@@ -91,7 +96,7 @@ class NormalizeFile
             $data->put('type', 'text');
 
             if ($data['size']) {
-                $size = $this->file->getSize();
+                $size = $this->file['size'];
                 if ($size < 350000) {
                     $data->put('source', $this->storage->get($this->storagePath));
                 } else {
@@ -131,7 +136,7 @@ class NormalizeFile
     public function getFileSize()
     {
         try {
-            return ($this->file->getSize() != 0) ? $this->formatBytes($this->file->getSize(), 0) : 0;
+            return ($this->file['size'] != 0) ? $this->formatBytes($this->file['size'], 0) : 0;
         } catch (\Exception $e) {
             return false;
         }
@@ -179,7 +184,7 @@ class NormalizeFile
     public function modificationDate()
     {
         try {
-            return Carbon::createFromTimestamp($this->file->getMTime())->format('Y-m-d H:i:s');
+            return Carbon::createFromTimestamp($this->file['timestamp'])->format('Y-m-d H:i:s');
         } catch (\Exception $e) {
             return false;
         }
@@ -190,7 +195,7 @@ class NormalizeFile
      */
     private function getCorrectMimeFileType()
     {
-        $extension = $this->file->getExtension();
+        $extension = $this->file['extension'];
         $types = MimeTypes::checkMimeType($extension);
 
         if (count($types) > 0) {
@@ -204,7 +209,7 @@ class NormalizeFile
 
     private function availablesTextExtensions()
     {
-        $extension = $this->file->getExtension();
+        $extension = $this->file['extension'];
         $types = MimeTypes::checkMimeType($extension);
 
         $exist = false;
