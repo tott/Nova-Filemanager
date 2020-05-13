@@ -64,7 +64,7 @@ trait GetFiles
         if (! $this->isDot($file) && ! $this->exceptExtensions->contains($file['extension']) && ! $this->exceptFolders->contains($file['basename']) && ! $this->exceptFiles->contains($file['basename']) && $this->accept($file)) {
             $fileInfo = [
                 'id'         => $id,
-                'name'       => trim($file['basename']),
+                'name'       => isset($file['name']) ? $file['name'] : trim($file['basename']),
                 'path'       => $this->cleanSlashes($file['path']),
                 'type'       => $file['type'],
                 'mime'       => $this->getFileType($file),
